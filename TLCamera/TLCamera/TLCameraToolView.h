@@ -24,6 +24,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)cameraToolViewClickDismiss:(TLCameraToolView *)toolView;
 
+@optional
+- (void)cameraToolViewClickDismiss:(TLCameraToolView *)toolView setVideoZoomFactor:(CGFloat)zoomFactor;
+
 @end
 
 @interface TLCameraToolView : UIView

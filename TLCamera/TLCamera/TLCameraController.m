@@ -428,6 +428,18 @@
     [self setFocusWithMode:AVCaptureFocusModeAutoFocus exposureMode:AVCaptureExposureModeAutoExpose point:cameraPoint];
 }
 
+//设置焦距
+- (void)setVideoZoomFactor:(CGFloat)zoomFactor {
+    /**
+     iPhone8:minAvailableVideoZoomFactor = 1 maxAvailableVideoZoomFactor = 135
+     */
+    zoomFactor = MAX(zoomFactor, 1);
+    
+    [self changeDeviceProperty:^(AVCaptureDevice *device) {
+        device.videoZoomFactor = zoomFactor;
+    }];
+}
+
 //设置聚焦点和曝光点
 - (void)setFocusWithMode:(AVCaptureFocusMode )focusMode exposureMode:(AVCaptureExposureMode)exposureMode point:(CGPoint)point {
     [self changeDeviceProperty:^(AVCaptureDevice *device) {
@@ -553,6 +565,7 @@
 - (void)cameraToolViewFinishRecord:(TLCameraToolView *)toolView {
     self.switchButton.hidden = YES;
     [self.movieFileOutPut stopRecording];
+    [self setVideoZoomFactor:1];
 }
 
 - (void)cameraToolViewClickCancel:(TLCameraToolView *)toolView {
@@ -588,6 +601,10 @@
         [self.session stopRunning];
     }
     [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+- (void)cameraToolViewClickDismiss:(TLCameraToolView *)toolView setVideoZoomFactor:(CGFloat)zoomFactor {
+    [self setVideoZoomFactor:zoomFactor];
 }
 
 #pragma mark - AVCaptureFileOutputRecordingDelegate

@@ -18,6 +18,7 @@ static const CGFloat kTLContentPadding = 20.0f;
     //防止动画和长按手势都调用FinishRecord
     BOOL _didStopRecord;
     BOOL _didLayoutSubviews;
+    CGPoint _startReordPoint;
 }
 
 @property (nonatomic, strong) UILabel *tipLabel;
@@ -195,15 +196,25 @@ static const CGFloat kTLContentPadding = 20.0f;
 }
 
 - (void)longPressAction:(UILongPressGestureRecognizer *)longPress {
-    if (longPress.state == UIGestureRecognizerStateBegan) {
+    UIGestureRecognizerState state = longPress.state;
+    if (state == UIGestureRecognizerStateBegan) {
         _didStopRecord = NO;
+        _startReordPoint = [longPress locationInView:self];
         
         if (_delegate && [_delegate respondsToSelector:@selector(cameraToolViewStartRecord:)]) {
             [_delegate cameraToolViewStartRecord:self];
         }
     }
-    else if (longPress.state == UIGestureRecognizerStateEnded ||
-             longPress.state == UIGestureRecognizerStateCancelled) {
+    else if (state == UIGestureRecognizerStateChanged) {
+        if (_didStopRecord) return;
+        CGFloat pointY = [longPress locationInView:self].y;
+        CGFloat zoomFactor = pointY >= _startReordPoint.y ? 1 : (((_startReordPoint.y - pointY) / self.tl_top) * 10);
+        if (_delegate && [_delegate respondsToSelector:@selector(cameraToolViewClickDismiss:setVideoZoomFactor:)]) {
+            [_delegate cameraToolViewClickDismiss:self setVideoZoomFactor:zoomFactor];
+        }
+    }
+    else if (state == UIGestureRecognizerStateEnded ||
+             state == UIGestureRecognizerStateCancelled) {
         if (_didStopRecord) return;
         _didStopRecord = YES;
         [self stopAnimating];
