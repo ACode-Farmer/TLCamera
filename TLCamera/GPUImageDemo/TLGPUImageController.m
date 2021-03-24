@@ -167,11 +167,11 @@
     self.focusCursorImageView.alpha = 0;
     [self.view addSubview:self.focusCursorImageView];
     
-//    self.switchButton = [UIButton buttonWithType:UIButtonTypeCustom];
-//    [self.switchButton setImage:[UIImage tl_imageWithNamed:@"tl_switch_camera"] forState:UIControlStateNormal];
-//    [self.switchButton addTarget:self action:@selector(exchangeCameraPosition) forControlEvents:UIControlEventTouchUpInside];
-//    [self.view addSubview:self.switchButton];
-    //[kColorRGB(244, 244, 244) colorWithAlphaComponent:0.9];
+    self.switchButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    [self.switchButton setImage:[UIImage tl_imageWithNamed:@"tl_switch_camera"] forState:UIControlStateNormal];
+    [self.switchButton addTarget:self action:@selector(exchangeCameraPosition) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:self.switchButton];
+    [kColorRGB(244, 244, 244) colorWithAlphaComponent:0.9];
     
     _filterBtn1 = [UIButton buttonWithType:UIButtonTypeCustom];
     _filterBtn1.backgroundColor = [kColorRGB(244, 244, 244) colorWithAlphaComponent:0.7];
@@ -194,6 +194,14 @@
     
     [self.view addSubview:_filterBtn1];
     [self.view addSubview:_filterBtn2];
+    
+    //
+    UITapGestureRecognizer *singleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(adjustFocusPoint:)];
+    [self.view addGestureRecognizer:singleTap];
+    UITapGestureRecognizer *doubleTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(exchangeCameraPosition)];
+    doubleTap.numberOfTapsRequired = 2;
+    [singleTap requireGestureRecognizerToFail:doubleTap];
+    [self.view addGestureRecognizer:doubleTap];
 }
 
 - (void)filterBtnAction:(UIButton *)sender {
@@ -214,6 +222,36 @@
     [self.videoCamera addTarget:self.filter];
     [self.filter addTarget:self.filterView];
     [self.videoCamera startCameraCapture];
+}
+
+#pragma mark - 手势
+- (void)adjustFocusPoint:(UITapGestureRecognizer *)singleTap {
+    
+}
+
+- (void)exchangeCameraPosition {
+    self.switchButton.enabled = NO;
+    
+    AVCaptureDevicePosition position = [self.videoCamera cameraPosition];
+    if (position == AVCaptureDevicePositionBack) {
+        position = AVCaptureDevicePositionFront;
+    }
+    else {
+        position = AVCaptureDevicePositionBack;
+    }
+    [self.videoCamera stopCameraCapture];
+    [self.filter removeAllTargets];
+    [self.videoCamera removeAllTargets];
+    
+    self.videoCamera = [[GPUImageVideoCamera alloc] initWithSessionPreset:AVCaptureSessionPreset1280x720 cameraPosition:position];
+    self.videoCamera.delegate = self;
+    self.videoCamera.outputImageOrientation = [UIApplication sharedApplication].statusBarOrientation;
+    
+    [self.videoCamera addTarget:self.filter];
+    [self.filter addTarget:self.filterView];
+    [self.videoCamera startCameraCapture];
+    
+    self.switchButton.enabled = YES;
 }
 
 - (void)playVideo {
@@ -240,6 +278,23 @@
         [[NSFileManager defaultManager] removeItemAtURL:self.videoUrl error:nil];
         self.videoUrl = nil;
     }
+}
+
+//设置焦距
+- (void)setVideoZoomFactor:(CGFloat)zoomFactor {
+    /**
+     iPhone8:minAvailableVideoZoomFactor = 1 maxAvailableVideoZoomFactor = 135
+     */
+    zoomFactor = MAX(zoomFactor, 1);
+    
+    AVCaptureDevice *device = [self.videoCamera inputCamera];
+    NSError *error = nil;
+    //改变设备属性前一定要先调用lockForConfiguration:，之后使用unlockForConfiguration解锁
+    if (![device lockForConfiguration:&error]) {
+        return;
+    }
+    device.videoZoomFactor = zoomFactor;
+    [device unlockForConfiguration];
 }
 
 #pragma mark - TLCameraToolViewDelegate
@@ -288,6 +343,8 @@
         [weakSelf playVideo];
     }];
     [self.videoCamera stopCameraCapture];
+    
+    [self setVideoZoomFactor:1];
 }
 
 - (void)cameraToolViewClickCancel:(TLCameraToolView *)toolView {
@@ -314,6 +371,10 @@
 - (void)cameraToolViewClickDismiss:(TLCameraToolView *)toolView {
     [self.videoCamera stopCameraCapture];
     [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+- (void)cameraToolViewClickDismiss:(TLCameraToolView *)toolView setVideoZoomFactor:(CGFloat)zoomFactor {
+    [self setVideoZoomFactor:zoomFactor];
 }
 
 #pragma mark - GPUImageVideoCameraDelegate
