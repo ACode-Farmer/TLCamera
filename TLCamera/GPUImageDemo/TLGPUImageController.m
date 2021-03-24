@@ -129,7 +129,7 @@
 }
 
 - (void)gc_setupGPUImage {
-    self.videoCamera = [[GPUImageVideoCamera alloc] initWithSessionPreset:AVCaptureSessionPreset1280x720 cameraPosition:AVCaptureDevicePositionFront];
+    self.videoCamera = [[GPUImageVideoCamera alloc] initWithSessionPreset:AVCaptureSessionPreset1280x720 cameraPosition:AVCaptureDevicePositionBack];
     self.videoCamera.delegate = self;
     self.videoCamera.outputImageOrientation = [UIApplication sharedApplication].statusBarOrientation;
     
